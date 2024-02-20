@@ -1,0 +1,48 @@
+const defaultIncomeCategories = [
+    "65c00bfcf0ac28f7ebcf2c83",
+    "65c00c09f0ac28f7ebcf2c85",
+    "65c00c16f0ac28f7ebcf2c87",
+    "65c00c23f0ac28f7ebcf2c89",
+    "65c00c32f0ac28f7ebcf2c8b",
+    "65c00c44f0ac28f7ebcf2c8d",
+    "65c00c57f0ac28f7ebcf2c8f",
+    "65c00c65f0ac28f7ebcf2c91",
+    "65c00c74f0ac28f7ebcf2c93",
+    "65c00c81f0ac28f7ebcf2c95",
+    "65c00c8df0ac28f7ebcf2c97",
+  ];
+  
+  const defaultExpenseCategories = [
+    "65c00a20f0ac28f7ebcf2c49",
+    "65c00a35f0ac28f7ebcf2c4b",
+    "65c00a4bf0ac28f7ebcf2c4d",
+    "65c00a74f0ac28f7ebcf2c4f",
+    "65c00a82f0ac28f7ebcf2c51",
+    "65c00a90f0ac28f7ebcf2c53",
+    "65c00a9ff0ac28f7ebcf2c55",
+    "65c00ab3f0ac28f7ebcf2c57",
+    "65c00ac0f0ac28f7ebcf2c59",
+    "65c00acdf0ac28f7ebcf2c5b",
+    "65c00adcf0ac28f7ebcf2c5d",
+    "65c00ae8f0ac28f7ebcf2c5f",
+    "65c00af6f0ac28f7ebcf2c61",
+    "65c00b09f0ac28f7ebcf2c63",
+    "65c00b1ff0ac28f7ebcf2c65",
+    "65c00b2df0ac28f7ebcf2c67",
+    "65c00b3cf0ac28f7ebcf2c69",
+    "65c00b4df0ac28f7ebcf2c6b",
+    "65c00b5cf0ac28f7ebcf2c6d",
+    "65c00b69f0ac28f7ebcf2c6f",
+    "65c00b76f0ac28f7ebcf2c71",
+    "65c00b84f0ac28f7ebcf2c73",
+    "65c00b8ff0ac28f7ebcf2c75",
+    "65c00b9cf0ac28f7ebcf2c77",
+    "65c00ba9f0ac28f7ebcf2c79",
+    "65c00bb7f0ac28f7ebcf2c7b",
+    "65c00bc6f0ac28f7ebcf2c7d",
+    "65c00bd4f0ac28f7ebcf2c7f",
+    "65c00bdff0ac28f7ebcf2c81",
+  ];
+  
+  module.exports = { defaultIncomeCategories, defaultExpenseCategories };
+  
