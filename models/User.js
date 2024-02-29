@@ -21,7 +21,10 @@ const userSchema = new mongoose.Schema(
       type: [{ type: String }],
       default: defaultExpenseCategories,
     },
-    lastChatRenewal: { type: Date },
+    lastChatRenewal: {
+      type: Date,
+      default: () => new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours in milliseconds
+    },
     accountType: {
       type: String,
       enum: ["free", "pro", "ultimate"],
@@ -32,6 +35,7 @@ const userSchema = new mongoose.Schema(
     resetTokenExpiration: { type: Date },
     verified: { type: Boolean, default: false },
     verificationOtp: { type: String },
+    currency: { type: String, default: "USD" },
   },
   {
     timestamps: true,

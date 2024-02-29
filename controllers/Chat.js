@@ -156,7 +156,7 @@ const updatingAssistant = async (user) => {
 const renewChatIfNeeded = async (user) => {
   console.log("inside renew user ", user.lastChatRenewal);
   const today = new Date();
-  const sixHoursInMillis = 6 * 60 * 60 * 1000; // Changed to 6 hours
+  const sixHoursInMillis = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
   console.log(today - user.lastChatRenewal >= sixHoursInMillis);
   if (
     !user.lastChatRenewal ||
@@ -204,6 +204,7 @@ const addMessage = asyncHandler(async (req, res) => {
       messages
     );
     console.log("message created", messageResponse);
+
     const run = await openai.beta.threads.runs.create(
       messageResponse.thread_id,
       {
@@ -212,7 +213,9 @@ const addMessage = asyncHandler(async (req, res) => {
         /nPlease note: If user asks question related to his income expense details tell the answer from data file uploaded. /n
         if the question is not related to budget finance money or saving then reply that 
         you are a finance manger who cannot tell such answers only.
-        also Please address the user with name: ${user.name}`,
+        also Please address the user with name: ${user.name} and dont return the source of the answer 
+        /nThe unit of currency for ${user.name} is ${user.currency} 
+        `,
       }
     );
 
@@ -275,12 +278,17 @@ const addMessageWithoutAssistant = asyncHandler(async (req, res) => {
     const { user } = req;
     const { userMessage } = req.body;
     console.log(userMessage);
+    console.log(
+      user.currency +
+        "------------------------------User Currency -----------------------"
+    );
     const messages = [
       {
         role: "system",
-        content: `You are a helpful finance manager who helps ${user.name} manage his finances.
+        content: `You are a helpful finance manager who helps ${user.name} manage his finances. 
         /nPlease note if the question is not related to budget finance money or saving then reply that you are a finance manger who cannot tell such answers only
-        /nalso Please address the user with name: ${user.name}
+        /nalso Please address the user with name: ${user.name}  and dont return the source of the answer 
+        /nThe unit of currency for ${user.name} is ${user.currency}
         /nHere is question: `,
       },
       {

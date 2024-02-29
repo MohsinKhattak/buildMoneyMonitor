@@ -24,7 +24,7 @@ const addTransaction = asyncHandler(async (req, res) => {
     });
     await newTransaction.save();
 
-    user.lastChatRenewal = new Date(); 
+    user.lastChatRenewal = new Date();
     await user.save();
 
     res.status(201).json({
@@ -93,18 +93,14 @@ const getIncome = asyncHandler(async (req, res) => {
 const getAllTransactions = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
-
-    // Extract and parse the year and month parameters from the URL
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month);
     console.log("getting all transactions for a specific month", month, year);
 
-    // Validate year and month
     if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
       return res.status(400).json({ error: "Invalid year or month" });
     }
 
-    // Create a new Date object with the specified year and month
     const startDate = new Date(year, month - 1, 1);
     const nextMonthDate = new Date(year, month, 1);
     const endDate = new Date(
@@ -119,7 +115,24 @@ const getAllTransactions = asyncHandler(async (req, res) => {
       {
         $match: {
           user: userId,
-          createdAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $addFields: {
+          transformedDate: {
+            $dateFromString: {
+              dateString: "$date",
+              format: "%d/%m/%Y",
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          transformedDate: {
+            $gte: startDate,
+            $lt: endDate,
+          },
         },
       },
       {
@@ -156,7 +169,15 @@ const getAllTransactions = asyncHandler(async (req, res) => {
       },
     ]);
 
-    res.json(transactions);
+    // Calculate total income and total expense
+    let totalIncome = 0;
+    let totalExpense = 0;
+    transactions.forEach((transaction) => {
+      totalIncome += transaction.totalIncome;
+      totalExpense += transaction.totalExpense;
+    });
+
+    res.json({ transactions, totalIncome, totalExpense });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -175,7 +196,10 @@ const getOneTransaction = asyncHandler(async (req, res) => {
     if (transaction.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: "Unauthorized" });
     }
-
+    console.log(
+      "..................................................",
+      transaction
+    );
     res.json(transaction);
   } catch (error) {
     console.error(error);
@@ -186,10 +210,10 @@ const getOneTransaction = asyncHandler(async (req, res) => {
 const editTransaction = asyncHandler(async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { typeOfTransaction, description, category, amount } = req.body;
-    console.log("inside edit for amount", amount);
+    const { typeOfTransaction, description, category, amount, date } = req.body;
+    console.log("inside date for date", date);
 
-    if (!typeOfTransaction || !description || !category || !amount) {
+    if (!typeOfTransaction || !description || !category || !amount || !date) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -198,12 +222,19 @@ const editTransaction = asyncHandler(async (req, res) => {
     if (!transaction) {
       return res.status(404).json({ error: "Transaction not found" });
     }
+    const [day, month, year] = date.split("/").map(Number);
+    const parsedDate = new Date(year, month - 1, day);
+    const dayOfWeek = parsedDate.toLocaleDateString("en-US", {
+      weekday: "long",
+    });
 
     // Update transaction fields
+    transaction.day = dayOfWeek;
     transaction.typeOfTransaction = typeOfTransaction;
     transaction.description = description;
     transaction.category = category;
     transaction.amount = amount;
+    transaction.date = date;
 
     // Save updated transaction
     await transaction.save();
@@ -304,11 +335,9 @@ const getExportData = asyncHandler(async (req, res) => {
       createdAt: { $gte: startDateObj, $lte: endDate },
     });
     if (transactions.length === 0) {
-      return res
-        .status(404)
-        .json({
-          message: "No transactions found within the specified date range",
-        });
+      return res.status(404).json({
+        message: "No transactions found within the specified date range",
+      });
     }
 
     // Prepare data for CSV conversion
@@ -332,6 +361,180 @@ const getExportData = asyncHandler(async (req, res) => {
   }
 });
 
+const getLastWeekTransactions = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const today = new Date();
+    const lastWeekStartDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 6
+    );
+    const lastWeekEndDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1
+    );
+    const transactions = await Transaction.aggregate([
+      {
+        $match: {
+          user: userId,
+        },
+      },
+      {
+        $addFields: {
+          transformedDate: {
+            $dateFromString: {
+              dateString: "$date",
+              format: "%d/%m/%Y",
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          transformedDate: {
+            $gte: lastWeekStartDate,
+            $lt: lastWeekEndDate,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: "$date",
+            day: "$day",
+          },
+          transactions: {
+            $push: {
+              _id: "$_id",
+              typeOfTransaction: "$typeOfTransaction",
+              description: "$description",
+              category: "$category",
+              amount: "$amount",
+            },
+          },
+          totalIncome: {
+            $sum: {
+              $cond: [{ $eq: ["$typeOfTransaction", "income"] }, "$amount", 0],
+            },
+          },
+          totalExpense: {
+            $sum: {
+              $cond: [{ $eq: ["$typeOfTransaction", "expense"] }, "$amount", 0],
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          "_id.date": -1,
+        },
+      },
+    ]);
+
+    // Calculate total income and total expense
+    let totalIncome = 0;
+    let totalExpense = 0;
+    transactions.forEach((transaction) => {
+      totalIncome += transaction.totalIncome;
+      totalExpense += transaction.totalExpense;
+    });
+
+    res.json({ transactions, totalIncome, totalExpense });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+const getLastSixMonthTransactions = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const today = new Date();
+    const lastSixMonthsStartDate = new Date(
+      today.getFullYear(),
+      today.getMonth() - 6,
+      1
+    );
+    const lastSixMonthsEndDate = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0
+    );
+
+    const transactions = await Transaction.aggregate([
+      {
+        $match: {
+          user: userId,
+        },
+      },
+      {
+        $addFields: {
+          transformedDate: {
+            $dateFromString: {
+              dateString: "$date",
+              format: "%d/%m/%Y",
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          transformedDate: {
+            $gte: lastSixMonthsStartDate,
+            $lt: lastSixMonthsEndDate,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: "$date",
+            day: "$day",
+          },
+          transactions: {
+            $push: {
+              _id: "$_id",
+              typeOfTransaction: "$typeOfTransaction",
+              description: "$description",
+              category: "$category",
+              amount: "$amount",
+            },
+          },
+          totalIncome: {
+            $sum: {
+              $cond: [{ $eq: ["$typeOfTransaction", "income"] }, "$amount", 0],
+            },
+          },
+          totalExpense: {
+            $sum: {
+              $cond: [{ $eq: ["$typeOfTransaction", "expense"] }, "$amount", 0],
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          "_id.date": -1,
+        },
+      },
+    ]);
+
+    // Calculate total income and total expense
+    let totalIncome = 0;
+    let totalExpense = 0;
+    transactions.forEach((transaction) => {
+      totalIncome += transaction.totalIncome;
+      totalExpense += transaction.totalExpense;
+    });
+
+    res.json({ transactions, totalIncome, totalExpense });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 module.exports = {
   addTransaction,
   getExpense,
@@ -342,4 +545,6 @@ module.exports = {
   getPercentagesAccordingCategory,
   deleteTransaction,
   getExportData,
+  getLastWeekTransactions,
+  getLastSixMonthTransactions,
 };
