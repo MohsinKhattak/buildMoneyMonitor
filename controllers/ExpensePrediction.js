@@ -9,7 +9,6 @@ const predict = asyncHandler(async (req, res) => {
   try {
     const { userId } = req.params;
     const { incomeData, expenseData } = req.body;
-    console.log("/predict body : ", incomeData, expenseData);
 
     const nextMonthIncome =
       parseInt(incomeData[incomeData.length - 1] || 0) -
@@ -19,14 +18,13 @@ const predict = asyncHandler(async (req, res) => {
       expenseData,
       nextMonthIncome
     );
-    console.log("99999999999999999999999    ", nextMonthIncome);
+
     const newPrediction = new ExpensePrediction({
       predictedExprense: nextMonthExpense,
       user: userId,
     });
 
     await newPrediction.save();
-    console.log("new predictions: ", newPrediction);
 
     return res
       .status(200)
@@ -46,9 +44,9 @@ const getLatestPrediction = asyncHandler(async (req, res) => {
       .sort({ timestamp: -1 })
       .limit(1);
 
-      console.log(predictionData[0])
-
-    res.status(200).json({ prediction: predictionData[0].predictedExprense || 0 });
+    res
+      .status(200)
+      .json({ prediction: predictionData[0].predictedExprense || 0 });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

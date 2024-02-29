@@ -19,7 +19,6 @@ function getYesterdayDate() {
 }
 
 async function fetchTransactionData(userId) {
-  console.log("inside Transactions");
   return Transaction.find({ user: userId }).sort({ createdAt: -1 }).lean();
 }
 
@@ -94,10 +93,6 @@ async function getDataSet(transactions) {
       completion: `The total income yesterday was ${yesterdayIncome}.`,
     });
 
-    console.log("first : ", dataset[0]);
-    console.log("last : ", dataset[dataset.length - 1]);
-    console.log("total length : ", dataset.length);
-
     const datasetString = dataset
       .map(
         (item) => `prompt: ${item.prompt}\n completion: ${item.completion}\n`
@@ -106,7 +101,7 @@ async function getDataSet(transactions) {
     try {
       const filename = `dataset_${transactions[0].user}.txt`;
       await fs.writeFile(filename.toString(), datasetString);
-      console.log("Dataset saved to", filename);
+
       return filename;
     } catch (err) {
       console.error("Error saving dataset:", err);
@@ -120,24 +115,20 @@ const updatingAssistant = async (user) => {
   let filename = "";
 
   try {
-    console.log("Inside update assistant", user);
     const transactions = await fetchTransactionData(user._id);
     if (transactions.length === 0 || transactions === null) {
       return;
     }
     filename = await getDataSet(transactions); // Assign filename value
-    console.log("----------------THE FILE NAME--------------", filename);
+
     const file = await openai.files.create({
       file: require("fs").createReadStream(filename),
       purpose: "assistants",
     });
 
-    console.log("FILE: ", file);
     const assistant = await openai.beta.assistants.update(user.assistantId, {
       file_ids: [file.id],
     });
-
-    console.log("Updated ASSISTANT : ", assistant);
   } catch (error) {
     console.error("Error updating assistant:", error);
     throw error;
@@ -145,7 +136,6 @@ const updatingAssistant = async (user) => {
     try {
       if (filename) {
         await fs.unlink(filename);
-        console.log("File deleted successfully");
       }
     } catch (err) {
       console.error("Error deleting file:", err);
@@ -154,10 +144,9 @@ const updatingAssistant = async (user) => {
 };
 
 const renewChatIfNeeded = async (user) => {
-  console.log("inside renew user ", user.lastChatRenewal);
   const today = new Date();
   const sixHoursInMillis = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-  console.log(today - user.lastChatRenewal >= sixHoursInMillis);
+
   if (
     !user.lastChatRenewal ||
     today - user.lastChatRenewal >= sixHoursInMillis
@@ -177,9 +166,8 @@ const renewChat = async (user) => {
     user.chatbotThread = thread.id;
     user.lastChatRenewal = new Date();
     await user.save();
-    console.log("Created thread: ", thread);
+
     const response = await updatingAssistant(user);
-    console.log(response);
   } catch (error) {
     console.log("Error while creating assistant: ", error);
     res.status(500).json({ error: "Error while creating assistant" });
@@ -193,7 +181,7 @@ const addMessage = asyncHandler(async (req, res) => {
     const threadId = user.chatbotThread;
     const assistantId = user.assistantId;
     const { userMessage } = req.body;
-    console.log(userMessage, user);
+
     const messages = {
       role: "user",
       content: userMessage,
@@ -203,7 +191,6 @@ const addMessage = asyncHandler(async (req, res) => {
       threadId,
       messages
     );
-    console.log("message created", messageResponse);
 
     const run = await openai.beta.threads.runs.create(
       messageResponse.thread_id,
@@ -219,14 +206,12 @@ const addMessage = asyncHandler(async (req, res) => {
       }
     );
 
-    console.log("this is run ,", run);
     let runStatus = await openai.beta.threads.runs.retrieve(
       messageResponse.thread_id,
       run.id
     );
 
     while (runStatus.status !== "completed") {
-      console.log(runStatus);
       await new Promise((resolve) => setTimeout(resolve, 1000));
       runStatus = await openai.beta.threads.runs.retrieve(
         messageResponse.thread_id,
@@ -249,11 +234,10 @@ const addMessage = asyncHandler(async (req, res) => {
 });
 
 const getChat = asyncHandler(async (req, res) => {
-  console.log("--------------inside get chats----------------------");
   try {
     const { user } = req;
     const thread_id = user.chatbotThread;
-    console.log(user);
+
     const allMessages = await openai.beta.threads.messages.list(thread_id);
 
     const extractedData = allMessages.data
@@ -277,11 +261,7 @@ const addMessageWithoutAssistant = asyncHandler(async (req, res) => {
   try {
     const { user } = req;
     const { userMessage } = req.body;
-    console.log(userMessage);
-    console.log(
-      user.currency +
-        "------------------------------User Currency -----------------------"
-    );
+
     const messages = [
       {
         role: "system",
@@ -333,7 +313,6 @@ const addMessageWithoutAssistant = asyncHandler(async (req, res) => {
 
 const getChatWithoutAssistant = asyncHandler(async (req, res) => {
   try {
-    console.log("--------------inside get chats----------------------");
     const { user } = req;
     const currentDate = new Date();
     const oneMonthAgo = new Date();

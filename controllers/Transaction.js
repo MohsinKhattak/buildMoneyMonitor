@@ -95,7 +95,6 @@ const getAllTransactions = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month);
-    console.log("getting all transactions for a specific month", month, year);
 
     if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
       return res.status(400).json({ error: "Invalid year or month" });
@@ -108,8 +107,6 @@ const getAllTransactions = asyncHandler(async (req, res) => {
       nextMonthDate.getMonth(),
       1
     );
-
-    console.log("start date:", startDate, "end date:", endDate);
 
     const transactions = await Transaction.aggregate([
       {
@@ -178,6 +175,7 @@ const getAllTransactions = asyncHandler(async (req, res) => {
     });
 
     res.json({ transactions, totalIncome, totalExpense });
+    console.log("sending data");
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -196,10 +194,7 @@ const getOneTransaction = asyncHandler(async (req, res) => {
     if (transaction.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: "Unauthorized" });
     }
-    console.log(
-      "..................................................",
-      transaction
-    );
+
     res.json(transaction);
   } catch (error) {
     console.error(error);
@@ -211,7 +206,6 @@ const editTransaction = asyncHandler(async (req, res) => {
   try {
     const { transactionId } = req.params;
     const { typeOfTransaction, description, category, amount, date } = req.body;
-    console.log("inside date for date", date);
 
     if (!typeOfTransaction || !description || !category || !amount || !date) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -286,7 +280,6 @@ const getPercentagesAccordingCategory = asyncHandler(async (req, res) => {
     // Calculate percentages for each description and round off to two decimal places
     const percentages = [];
     for (const desc in groupedTransactions) {
-      console.log(groupedTransactions[desc]);
       const { amount, category, typeOfTransaction } = groupedTransactions[desc];
       const percentageValue = parseFloat(
         ((amount / totalAmount) * 100).toFixed(1)
@@ -311,7 +304,6 @@ const deleteTransaction = asyncHandler(async (req, res) => {
   try {
     const { transactionId } = req.params;
     const transaction = await Transaction.findById(transactionId);
-    console.log("inside delete transaction", transactionId);
 
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found" });

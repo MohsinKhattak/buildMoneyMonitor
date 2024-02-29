@@ -13,7 +13,7 @@ const openai = new OpenAI({
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
-  console.log(req.body);
+
   if (!name || !email || !password) {
     res.status(400).json({ message: "Fields not defined correctly" });
     throw new Error("Fields not defined correctly");
@@ -60,7 +60,7 @@ const createNewAssistant = async (user) => {
       model: "gpt-4-turbo-preview",
     });
     user.assistantId = assistant.id;
-    console.log("created assistant: ", assistant);
+
     const otp = generateVerificationCode();
     user.verificationOtp = otp;
     await user.save();
@@ -83,16 +83,14 @@ const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email: email.trim() });
-  console.log("Here");
-  console.log(req.body);
-  console.log(user);
+
   if (user.verified === false) {
     res.status(404).json({ message: "Not verified sign in again." });
   }
 
   if (user) {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    console.log("check pass correct ? ", isPasswordCorrect);
+
     if (isPasswordCorrect) {
       const token = generateToken(user._id);
       res.status(200).json({
@@ -115,7 +113,7 @@ const loginUser = asyncHandler(async (req, res) => {
 const editUserDetails = asyncHandler(async (req, res) => {
   const { user } = req;
   const userId = user._id;
-  console.log("In patch ", user);
+
   const editedUserDetails = await User.findByIdAndUpdate(
     { _id: userId },
     { ...req.body },
@@ -126,7 +124,7 @@ const editUserDetails = asyncHandler(async (req, res) => {
 
 const getUserDetails = asyncHandler(async (req, res) => {
   const { user } = req;
-  console.log(user);
+
   res.status(200).json(user);
 });
 
@@ -144,7 +142,6 @@ function generateVerificationCode() {
     }
   }
 
-  console.log("Verification code:", verificationCode);
   return verificationCode;
 }
 const forgotPassword = asyncHandler(async (req, res) => {
@@ -173,10 +170,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
   const { email, verificationCode, newPassword } = req.body;
-  console.log(email, verificationCode, newPassword);
+
   try {
     const user = await User.findOne({ email });
-    console.log("its user token", user);
+
     if (!user || user.resetToken !== verificationCode) {
       return res
         .status(400)
@@ -221,7 +218,7 @@ const paidAccount = asyncHandler(async (req, res) => {
 const getMessageCount = asyncHandler(async (req, res) => {
   try {
     const { user } = req;
-    console.log("getting message count");
+
     res.status(200).json({ count: user.messageCount || 0 });
   } catch (error) {
     console.error("Error getting message count:", error);
@@ -245,14 +242,13 @@ const getPaidStatus = asyncHandler(async (req, res) => {
 });
 
 const verifyAccount = asyncHandler(async (req, res) => {
-  console.log("In verify ", req.body);
   const { email, otp } = req.body;
   const user = await User.find({ email: email });
 
   if (!user[0]) {
     return res.status(400).send({ message: "user not found" });
   }
-  console.log("This is from user", user);
+
   if (otp != user[0].verificationOtp) {
     await User.deleteOne({ email: email });
     return res

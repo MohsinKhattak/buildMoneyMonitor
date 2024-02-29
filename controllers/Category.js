@@ -23,7 +23,7 @@ const addCategory = asyncHandler(async (req, res) => {
       user.categoryExpense.push(newCategory._id);
     }
     await user.save();
-    console.log("category addded??????????")
+
     return res.status(200).json({ message: "Category Added" });
   } catch (error) {
     return res.status(500).json({ error: "Failed to add category" });
@@ -31,7 +31,6 @@ const addCategory = asyncHandler(async (req, res) => {
 });
 const getCategories = asyncHandler(async (req, res) => {
   try {
-    console.log("Inside get categories");
     const { type } = req.params;
     const { user } = req;
 
@@ -69,7 +68,6 @@ const getCategories = asyncHandler(async (req, res) => {
 
 const updateCategoriesOrder = asyncHandler(async (req, res) => {
   try {
-    console.log("inside update categories");
     const { categoryOrder, type } = req.body;
     const { user } = req;
 

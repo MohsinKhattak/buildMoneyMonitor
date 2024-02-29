@@ -16,7 +16,7 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
       amount: amount,
       currency: "usd",
     });
-    console.log(paymentIntent);
+
     res.status(200).json(paymentIntent);
   } catch (error) {
     console.error("Stripe payment intent creation error:", error);
